@@ -138,10 +138,10 @@ class AdvancedRollManager(commands.Cog):
             cnx = await self.bot.database.get_connection() # Accessing the bot's DB connection
             cursor = await cnx.cursor()
             sql = "INSERT INTO DiceRolls (UserId, Probability, SuccessCount, DiceCount) VALUES (%s, %s, %s, %s)"
-            await cursor.execute(sql % (str(interaction.author.id), str(filled_count), str(success_count), str(number_of_dices)))
+            await cursor.execute(sql % (str(interaction.user.id), str(filled_count), str(success_count), str(number_of_dices)))
             await cnx.commit()
 
-            image_buffer = await self.generate_graph(interaction.author.id)
+            image_buffer = await self.generate_graph(interaction.user.id)
             embed.set_image(url="attachment://graph.png")
 
             await interaction.response.send_message(embed=embed, file=discord.File(image_buffer, filename="graph.png"))
