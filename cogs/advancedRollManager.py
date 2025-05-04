@@ -44,8 +44,9 @@ class AdvancedRollManager(commands.Cog):
                 if(diceType > 10):
                     messageString += "[{}]".format(result_rolls[result_roll])
                 else:
-                    emoji = emoji_map.get(roll, f"[{roll}]")
-                    messageString += emoji
+                    is_success = roll >= success
+                    emoji = emoji_map.get(result_roll, f"[{result_roll}]")
+                    messageString += f"**{emoji}**" if is_success else emoji
                 if result_rolls[result_roll] >= success:
                     success_result += 1
         return roll_results, success_result, messageString
