@@ -73,7 +73,7 @@ class AdvancedRollManager(commands.Cog):
             roll_results, success_count, message = self.get_dice_rolls(diceType, number_of_dices, diceExplosion, diceSuccess)
             filled_count = round((success_count / number_of_dices) * 10)
             bar = "🟩" * filled_count + "⬜" * (10 - filled_count)
-            embed = discord.Embed(title=f"**Successful:** {success_count}\nRate:{bar} - {round((success_count / number_of_dices)* 100)}%", description=message, color=0x00ff00)
+            embed = discord.Embed(title=f"**Successful:** {success_count}\nRate of Success: {bar} - {round((success_count / number_of_dices)* 100)}%", description=message, color=0x00ff00)
 
             await interaction.response.send_message(embed=embed)
         except Exception as e:
