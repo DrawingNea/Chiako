@@ -103,14 +103,14 @@ class AdvancedRollManager(commands.Cog):
         expression = f"{number_of_dices}d{diceType}e{diceExplosion}k{diceSuccess}"
         try:
             dice_roll = d20.roll(expression)
-            roll_results = dice_roll.results
-            sides = roll_results[0].sides if roll_results else 6
-            rolls = [r.result for r in roll_results]
+            roll_results = [die.result for die in dice_roll.dice]
+            sides = dice_roll.dice[0].sides if dice_roll.dice else 6
+            rolls = roll_results
             gif_path, final_rolls = self.generate_dice_roll_gif(sides, rolls)
             file = discord.File(gif_path, filename="dice.gif")
             embed = discord.Embed(title=f"Roll Result: {', '.join(map(str, final_rolls))}", color=0x00ff00)
             embed.set_image(url="attachment://dice.gif")
-            
+
             await interaction.response.send_message(embed=embed, file=file)
         except d20.RollSyntaxError as e:
             await interaction.response.send_message(f"❌ Invalid dice expression: `{e}`", ephemeral=True)
