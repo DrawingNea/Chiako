@@ -100,9 +100,7 @@ class AdvancedRollManager(commands.Cog):
         try:
             roll_results, success_count, message = self.get_dice_rolls(diceType, number_of_dices, diceExplosion, diceSuccess)
             probability = self.binomial_probability(diceType, number_of_dices, success_count, diceSuccess)
-            print(f"Probability: {probability}")
-            filled_count = 10 - int(probability * 10)
-            print(f"Filled Count: {filled_count}")
+            filled_count = 10 - math.ceil(probability * 10)
             bar = "🟩" * filled_count + "⬜" * (10 - filled_count)
             color = self.get_embed_color_by_success_rate(success_count, number_of_dices)
             embed = discord.Embed(title=f"**Successful:** {success_count}\nProbability: {bar} - {probability:.2%}", description=message, color=color)
