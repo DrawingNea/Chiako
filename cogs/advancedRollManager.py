@@ -8,7 +8,6 @@ import re
 from typing import Optional
 from typing import List
 import random
-import pydice
 
 class AdvancedRollManager(commands.Cog):
     def __init__(self, bot):

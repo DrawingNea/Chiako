@@ -6,5 +6,4 @@ requests
 fuzzywuzzy
 aiohttp
 aiomysql
-pydice
 Pillow
