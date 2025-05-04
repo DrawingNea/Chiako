@@ -113,7 +113,6 @@ class ChiakoBot(commands.Bot):
         """
         initial_extensions = [
             "dicerollmanager",
-            "advancedRollManager",
             "listmanager",
             "rolecolormanager",
             "skillmanager",
