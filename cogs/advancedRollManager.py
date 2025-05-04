@@ -32,10 +32,9 @@ class AdvancedRollManager(commands.Cog):
         dice_values = self.extract_dice_values(result)
         num_dice = len(dice_values)
 
-        # Dimensions
         size = 100
         padding = 10
-        width = max(size * num_dice + padding * 2, 500)
+        width = max(size * num_dice + padding * 2, 300)
         height = size + 80
 
         try:
@@ -51,23 +50,18 @@ class AdvancedRollManager(commands.Cog):
             image = Image.new("RGB", (width, height), (30, 30, 30))
             draw = ImageDraw.Draw(image)
 
-            # Roll dice (random during animation, real on last frame)
-            values = (
-                [random.randint(1, 20) for _ in range(num_dice)]
-                if frame_index < roll_frames - 1
-                else dice_values
-            )
+            # Simulated or final values
+            if frame_index < roll_frames - 1:
+                values = [random.randint(1, 20) for _ in range(num_dice)]
+            else:
+                values = dice_values
 
+            # Draw dice
             for i, val in enumerate(values):
                 x = padding + i * size
                 y = 10
-                draw.rectangle(
-                    [x, y, x + size - 10, y + size - 10],
-                    fill=(200, 200, 200),
-                    outline=(0, 0, 0)
-                )
+                draw.rectangle([x, y, x + size - 10, y + size - 10], fill=(200, 200, 200), outline=(0, 0, 0))
 
-                # Center the number
                 text = str(val)
                 bbox = font.getbbox(text)
                 text_width = bbox[2] - bbox[0]
@@ -75,21 +69,17 @@ class AdvancedRollManager(commands.Cog):
                 text_x = x + (size - 10 - text_width) // 2
                 text_y = y + (size - 10 - text_height) // 2
                 draw.text((text_x, text_y), text, font=font, fill=(0, 0, 0))
+
             # Only show total on final frame
             if frame_index == roll_frames - 1:
                 total_text = f"Total: {result.total}"
                 bbox = font_big.getbbox(total_text)
                 total_width = bbox[2] - bbox[0]
-                draw.text(
-                    ((width - total_width) // 2, size + 20),
-                    total_text,
-                    font=font_big,
-                    fill=(255, 255, 255)
-                )
+                draw.text(((width - total_width) // 2, size + 20), total_text, font=font_big, fill=(255, 255, 255))
 
             frames.append(image)
 
-        # Save as animated GIF
+        # Create GIF
         output = io.BytesIO()
         frames[0].save(
             output,
@@ -97,11 +87,11 @@ class AdvancedRollManager(commands.Cog):
             save_all=True,
             append_images=frames[1:],
             duration=100,
-            loop=0,
-            disposal=2
+            loop=0
         )
         output.seek(0)
         return output
+
 
 
     @app_commands.command(name="roll", description="Roll some dice, like 2d20kh1 + 3")
