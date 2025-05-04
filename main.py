@@ -133,7 +133,7 @@ class ChiakoBot(commands.Bot):
         """
         Setup the game status task of the bot.
         """
-        statuses = ["Ready to roll!", "Nice Dice!", "Rolling for you!"]
+        statuses = ["Ready to roll!", "Nice Dice!", "Let's roll!"]
         await self.change_presence(
             status=discord.Status.online,
             activity=discord.CustomActivity(
