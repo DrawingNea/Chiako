@@ -75,14 +75,14 @@ class AdvancedRollManager(commands.Cog):
 
         return (red << 16) + (green << 8) + blue
 
-    async def generate_graph(self, user_id: int) -> io.BytesIO:
+    async def generate_graph(self, user_id: int, result_count: int = 10) -> io.BytesIO:
         """
         Generates a bar graph for the last 10 rolls and returns it as a file-like object
         """
         # Get the last 10 filled scores (just for the demonstration, these should be filled dynamically)
         cnx = await self.bot.database.get_connection() # Accessing the bot's DB connection
         cursor = await cnx.cursor()
-        sql = f"SELECT Probability FROM DiceRolls WHERE UserId = '{user_id}' ORDER BY Id DESC LIMIT 10"
+        sql = f"SELECT Probability FROM DiceRolls WHERE UserId = '{user_id}' ORDER BY Id DESC LIMIT {result_count}"
         await cursor.execute(sql)
         records = await cursor.fetchall()
         last_rolls = [record[0] for record in records]
