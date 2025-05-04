@@ -103,7 +103,7 @@ class AdvancedRollManager(commands.Cog):
             filled_count = round(probability / 10)
             bar = "🟩" * filled_count + "⬜" * (10 - filled_count)
             color = self.get_embed_color_by_success_rate(success_count, number_of_dices)
-            embed = discord.Embed(title=f"**Successful:** {success_count}\nProbability: {bar} - {probability:.2%}%", description=message, color=color)
+            embed = discord.Embed(title=f"**Successful:** {success_count}\nProbability: {bar} - {probability:.2%}", description=message, color=color)
 
             await interaction.response.send_message(embed=embed)
         except Exception as e:
