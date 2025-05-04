@@ -4,6 +4,8 @@ from discord import app_commands
 from typing import Optional
 import random
 import math
+import matplotlib.pyplot as plt
+import io
 
 class AdvancedRollManager(commands.Cog):
     def __init__(self, bot):
@@ -73,6 +75,35 @@ class AdvancedRollManager(commands.Cog):
 
         return (red << 16) + (green << 8) + blue
 
+    async def generate_graph(self, user_id: int):
+        """
+        Generates a bar graph for the last 10 rolls and returns it as a file-like object
+        """
+        # Get the last 10 filled scores (just for the demonstration, these should be filled dynamically)
+        cnx = await self.bot.database.get_connection() # Accessing the bot's DB connection
+        cursor = await cnx.cursor()
+        sql = f"SELECT Probability FROM DiceRolls WHERE UserId = '{user_id}' ORDER BY Id DESC LIMIT 10"
+        await cursor.execute(sql)
+        records = await cursor.fetchall()
+        last_rolls = [record[0] for record in records]
+
+        # Create a plot
+        plt.figure(figsize=(8, 4))  # Adjust the size of the graph
+        plt.bar(range(len(last_rolls)), last_rolls, color='green')
+
+        plt.title("Last 10 Rolls - Success Scores")
+        plt.xlabel("Roll #")
+        plt.ylabel("Success Score")
+        plt.xticks(range(len(last_rolls)))
+
+        # Save the plot to a BytesIO object
+        image_buffer = io.BytesIO()
+        plt.savefig(image_buffer, format='png')
+        image_buffer.seek(0)  # Reset the buffer position to the start
+        plt.close()  # Close the plot
+
+        return image_buffer
+
     @app_commands.command(name="roll", description="Roll some dice, like 2d20kh1 + 3")
     @app_commands.describe(
         number_of_dices="How many dices to roll",
@@ -104,8 +135,16 @@ class AdvancedRollManager(commands.Cog):
             bar = "🟩" * filled_count + "⬜" * (10 - filled_count)
             color = self.get_embed_color_by_success_rate(success_count, number_of_dices)
             embed = discord.Embed(title=f"**Successful:** {success_count}\nProbability: {bar} - {probability:.2%}", description=message, color=color)
+            cnx = await self.bot.database.get_connection() # Accessing the bot's DB connection
+            cursor = await cnx.cursor()
+            sql = "INSERT INTO DiceRolls (UserId, Probability, SuccessCount, DiceCount) VALUES (%s, %s, %s, %s)"
+            await cursor.execute(sql % (str(interaction.author.id), str(filled_count), str(success_count), str(number_of_dices)))
+            await cnx.commit()
 
-            await interaction.response.send_message(embed=embed)
+            image_buffer = await self.generate_graph(interaction.author.id)
+            embed.set_image(url="attachment://graph.png")
+
+            await interaction.response.send_message(embed=embed, file=discord.File(image_buffer, filename="graph.png"))
         except Exception as e:
             print(f"Error: {e}")
             await interaction.response.send_message(f"Could not roll the dice")

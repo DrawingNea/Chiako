@@ -6,3 +6,4 @@ requests
 fuzzywuzzy
 aiohttp
 aiomysql
+matplotlib
