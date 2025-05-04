@@ -13,21 +13,24 @@ class AdvancedRollManager(commands.Cog):
         self.bot = bot
 
     def extract_dice_values(self, result: d20.RollResult) -> List[int]:
-      # Extract numbers from the first group of dice in parentheses
-      match = re.search(r"\(([\d\s+\-*d]+)\)", str(result.result))
-      if not match:
-          return []
-      # Get numbers inside the parentheses, split by operators
-      group = match.group(1)
-      numbers = re.findall(r"\d+", group)
-      return list(map(int, numbers))
+        dice_values = []
+
+        def recurse(term):
+            if isinstance(term, d20.ast.Die):
+                dice_values.extend([roll.value for roll in term.rolls])
+            elif hasattr(term, "terms"):
+                for subterm in term.terms:
+                    recurse(subterm)
+
+        recurse(result.exploded)
+        return dice_values
 
     def generate_dice_image(self, result: d20.RollResult) -> io.BytesIO:
       dice_values = self.extract_dice_values(result)
 
       size = 100
       padding = 10
-      width = size * len(dice_values) + padding * 2
+      width = max(size * len(dice_values) + padding * 2, 500)
       height = size + 60
 
       image = Image.new("RGB", (width, height), (30, 30, 30))
