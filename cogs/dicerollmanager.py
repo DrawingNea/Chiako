@@ -54,6 +54,7 @@ class DiceRollManager(commands.Cog):
     def get_dice_rolls(self, diceType: int = 6, number_of_dices: int = 1, explosion: int = 6, success: int = 5) -> tuple:
         roll_results = [[]]
         success_result = 0
+        messageString = ""
         for _ in range(number_of_dices):
             rollIndex = 0
             roll = random.randint(1, diceType)
