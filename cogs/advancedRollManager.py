@@ -45,6 +45,19 @@ class AdvancedRollManager(commands.Cog):
                     success_result += 1
         return roll_results, success_result, messageString
 
+    def get_embed_color_by_success_rate(self, successes: int, total: int) -> int:
+        if total == 0:
+            return 0x808080  # gray for no data
+
+        ratio = successes / total
+
+        # Interpolate between red (255, 0, 0) and green (0, 255, 0)
+        red = int(255 * (1 - ratio))
+        green = int(255 * ratio)
+        blue = 0
+
+        return (red << 16) + (green << 8) + blue
+
     @app_commands.command(name="roll", description="Roll some dice, like 2d20kh1 + 3")
     @app_commands.describe(
         number_of_dices="How many dices to roll",
@@ -73,7 +86,8 @@ class AdvancedRollManager(commands.Cog):
             roll_results, success_count, message = self.get_dice_rolls(diceType, number_of_dices, diceExplosion, diceSuccess)
             filled_count = round((success_count / number_of_dices) * 10)
             bar = "🟩" * filled_count + "⬜" * (10 - filled_count)
-            embed = discord.Embed(title=f"**Successful:** {success_count}\nRate of Success: {bar} - {round((success_count / number_of_dices)* 100)}%", description=message, color=0x00ff00)
+            color = self.get_embed_color_by_success_rate(success_count, number_of_dices)
+            embed = discord.Embed(title=f"**Successful:** {success_count}\nRate of Success: {bar} - {round((success_count / number_of_dices)* 100)}%", description=message, color=color)
 
             await interaction.response.send_message(embed=embed)
         except Exception as e:
