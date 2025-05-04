@@ -49,11 +49,13 @@ class AdvancedRollManager(commands.Cog):
         if total == 0:
             return 0x808080  # gray for no data
 
-        ratio = successes / total
+        raw_ratio = successes / total
+
+        biased_ratio = min(1.0, max(0.0, (raw_ratio - 0.2) / 0.8))  # compress range to favor green
 
         # Interpolate between red (255, 0, 0) and green (0, 255, 0)
-        red = int(255 * (1 - ratio))
-        green = int(255 * ratio)
+        red = int(255 * (1 - biased_ratio))
+        green = int(255 * biased_ratio)
         blue = 0
 
         return (red << 16) + (green << 8) + blue
