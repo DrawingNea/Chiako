@@ -106,9 +106,8 @@ class AdvancedRollManager(commands.Cog):
             diceType = int(dice_type)
         diceExplosion = int(record[1])
         diceSuccess = int(record[2])
-        expression = f"{number_of_dices}d{diceType}e{diceExplosion}k{diceSuccess}"
         try:
-            roll_results, success_count, message = self.get_dice_rolls(dice, count, explode, success)
+            roll_results, success_count, message = self.get_dice_rolls(diceType, number_of_dices, diceExplosion, diceSuccess)
             gif_path = self.generate_dice_roll_gif(roll_results)
 
             file = discord.File(gif_path, filename="dice.gif")
