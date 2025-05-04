@@ -3,10 +3,22 @@ from discord.ext import commands
 from discord import app_commands
 from typing import Optional
 import random
+import math
 
 class AdvancedRollManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    def binomial_probability(dice_type: int, number_of_dices: int, success_threshold: int) -> float:
+        """Calculate P(X ≥ k) for a binomial distribution."""
+        n = number_of_dices  # number of trials (dices rolled)
+        k = success_threshold
+        p = (dice_type - success_threshold + 1) / dice_type  # (10 - 7 + 1) / 10 = 0.4
+        prob = 0.0
+        for i in range(k, n + 1):
+            comb = math.comb(n, i)
+            prob += comb * (p ** i) * ((1 - p) ** (n - i))
+        return prob
 
     def get_dice_rolls(self, diceType: int = 6, number_of_dices: int = 1, explosion: int = 6, success: int = 5) -> tuple:
         emoji_map = {
@@ -87,10 +99,11 @@ class AdvancedRollManager(commands.Cog):
         diceSuccess = int(record[2])
         try:
             roll_results, success_count, message = self.get_dice_rolls(diceType, number_of_dices, diceExplosion, diceSuccess)
-            filled_count = round((success_count / number_of_dices) * 10)
+            probability = self.binomial_probability(diceType, number_of_dices, diceSuccess)
+            filled_count = round(probability / 10)
             bar = "🟩" * filled_count + "⬜" * (10 - filled_count)
             color = self.get_embed_color_by_success_rate(success_count, number_of_dices)
-            embed = discord.Embed(title=f"**Successful:** {success_count}\nRate of Success: {bar} - {round((success_count / number_of_dices)* 100)}%", description=message, color=color)
+            embed = discord.Embed(title=f"**Successful:** {success_count}\nProbability: {bar} - {probability:.2%}%", description=message, color=color)
 
             await interaction.response.send_message(embed=embed)
         except Exception as e:
