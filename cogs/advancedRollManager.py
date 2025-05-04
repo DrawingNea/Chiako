@@ -9,7 +9,7 @@ class AdvancedRollManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def binomial_probability(dice_type: int, number_of_dices: int, success_threshold: int) -> float:
+    def binomial_probability(self, dice_type: int, number_of_dices: int, success_threshold: int) -> float:
         """Calculate P(X ≥ k) for a binomial distribution."""
         n = number_of_dices  # number of trials (dices rolled)
         k = success_threshold
