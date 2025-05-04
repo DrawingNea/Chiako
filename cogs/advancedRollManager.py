@@ -47,9 +47,20 @@ class AdvancedRollManager(commands.Cog):
         img = Image.new("RGB", size, "white")
         draw = ImageDraw.Draw(img)
         draw.rectangle([0, 0, size[0], size[1]], outline="black", width=4)
+
         font = ImageFont.load_default()
-        w, h = font.getsize(str(number))
-        draw.text(((size[0] - w) // 2, (size[1] - h) // 2), str(number), fill="black", font=font)
+        text = str(number)
+
+        try:
+            # Preferred method in modern Pillow
+            bbox = draw.textbbox((0, 0), text, font=font)
+            w = bbox[2] - bbox[0]
+            h = bbox[3] - bbox[1]
+        except AttributeError:
+            # Fallback for older versions
+            w, h = draw.textsize(text, font=font)
+
+        draw.text(((size[0] - w) // 2, (size[1] - h) // 2), text, fill="black", font=font)
         return img
 
     def concatenate_faces(self, images):
