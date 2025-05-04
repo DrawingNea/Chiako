@@ -7,6 +7,7 @@ import io
 import re
 from typing import Optional
 from typing import List
+import random
 
 class AdvancedRollManager(commands.Cog):
     def __init__(self, bot):
@@ -68,15 +69,17 @@ class AdvancedRollManager(commands.Cog):
 
                 # Center the number
                 text = str(val)
-                text_width, text_height = draw.textsize(text, font=font)
+                bbox = font.getbbox(text)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
                 text_x = x + (size - 10 - text_width) // 2
                 text_y = y + (size - 10 - text_height) // 2
                 draw.text((text_x, text_y), text, font=font, fill=(0, 0, 0))
-
             # Only show total on final frame
             if frame_index == roll_frames - 1:
                 total_text = f"Total: {result.total}"
-                total_width, _ = draw.textsize(total_text, font=font_big)
+                bbox = font_big.getbbox(total_text)
+                total_width = bbox[2] - bbox[0]
                 draw.text(
                     ((width - total_width) // 2, size + 20),
                     total_text,
