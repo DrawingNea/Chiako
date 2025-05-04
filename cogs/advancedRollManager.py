@@ -28,69 +28,51 @@ class AdvancedRollManager(commands.Cog):
         recurse(result.expr)
         return dice_values
 
-    def generate_dice_animation(self, result: d20.RollResult, roll_frames=10) -> io.BytesIO:
-        dice_values = self.extract_dice_values(result)
-        num_dice = len(dice_values)
+    # Function to generate dice face images for any number of faces (1–n)
+    def generate_dice_face(number, sides):
+        size = (100, 100)  # Size of the dice face
+        img = Image.new("RGB", size, "white")  # Create a white background
+        draw = ImageDraw.Draw(img)
 
-        size = 100
-        padding = 10
-        width = max(size * num_dice + padding * 2, 300)
-        height = size + 80
+        # Draw the outline of the die
+        draw.rectangle([0, 0, size[0], size[1]], outline="black", width=5)
 
-        try:
-            font = ImageFont.truetype("arial.ttf", 36)
-            font_big = ImageFont.truetype("arial.ttf", 48)
-        except:
-            font = ImageFont.load_default()
-            font_big = ImageFont.load_default()
+        # For a d20, we'll use numbers instead of dots
+        font = ImageFont.load_default()
+        text = str(number)
 
+        # Get text size to center it
+        text_width, text_height = draw.textsize(text, font=font)
+        position = ((size[0] - text_width) // 2, (size[1] - text_height) // 2)
+        draw.text(position, text, fill="black", font=font)
+
+        return img
+
+    # Generate an animated roll for any die type (d6, d12, d20, etc.)
+    def generate_dice_roll_gif(sides, rolls, output_path="dice_roll.gif", duration=0.1):
         frames = []
+        
+        # Generate a smooth rolling effect by changing faces randomly
+        for _ in range(15):  # Create 15 frames for smooth animation
+            rand_num = random.randint(1, sides)  # Random face between 1 and 'sides'
+            frame = generate_dice_face(rand_num, sides)
+            frames.append(frame)
+        
+        # Add the actual roll results
+        for roll in rolls:
+            frame = generate_dice_face(roll, sides)
+            frames.append(frame)
 
-        for frame_index in range(roll_frames):
-            image = Image.new("RGB", (width, height), (30, 30, 30))
-            draw = ImageDraw.Draw(image)
-
-            # Simulated or final values
-            if frame_index < roll_frames - 1:
-                values = [random.randint(1, 20) for _ in range(num_dice)]
-            else:
-                values = dice_values
-
-            # Draw dice
-            for i, val in enumerate(values):
-                x = padding + i * size
-                y = 10
-                draw.rectangle([x, y, x + size - 10, y + size - 10], fill=(200, 200, 200), outline=(0, 0, 0))
-
-                text = str(val)
-                bbox = font.getbbox(text)
-                text_width = bbox[2] - bbox[0]
-                text_height = bbox[3] - bbox[1]
-                text_x = x + (size - 10 - text_width) // 2
-                text_y = y + (size - 10 - text_height) // 2
-                draw.text((text_x, text_y), text, font=font, fill=(0, 0, 0))
-
-            # Only show total on final frame
-            if frame_index == roll_frames - 1:
-                total_text = f"Total: {result.total}"
-                bbox = font_big.getbbox(total_text)
-                total_width = bbox[2] - bbox[0]
-                draw.text(((width - total_width) // 2, size + 20), total_text, font=font_big, fill=(255, 255, 255))
-
-            frames.append(image)
-
-        # Create GIF
-        output = io.BytesIO()
+        # Save the animation as a GIF
         frames[0].save(
-            output,
-            format='GIF',
+            output_path,
             save_all=True,
             append_images=frames[1:],
-            duration=100,
+            duration=int(duration * 1000),  # Duration in milliseconds per frame
             loop=0
         )
-        output.seek(0)
-        return output
+
+        return output_path, rolls
 
 
 
@@ -120,20 +102,17 @@ class AdvancedRollManager(commands.Cog):
         diceSuccess = int(record[2])
         expression = f"{number_of_dices}d{diceType}e{diceExplosion}k{diceSuccess}"
         try:
-            result = d20.roll(expression)
-            image_bytes = self.generate_dice_animation(result)
-            file = discord.File(fp=image_bytes, filename="roll.gif")
-
-            embed = discord.Embed(
-                title="🎲 Rolling Dice...",
-                description=f"`{expression}` ➜ **{result.total}**",
-                color=discord.Color.green()
-            )
-            embed.add_field(name="Details", value=f"`{result.result}`", inline=False)
-            embed.set_image(url="attachment://roll.gif")
+            dice_roll = d20.roll(expression)
+            roll_results = dice_roll.results
+            sides = roll_results[0].sides if roll_results else 6
+            rolls = [r.result for r in roll_results]
+            gif_path, final_rolls = generate_dice_roll_gif(sides, rolls
+            file = discord.File(gif_path, filename="dice.gif")
+            embed = discord.Embed(title=f"Roll Result: {', '.join(map(str, final_rolls))}", color=0x00ff00)
+            embed.set_image(url="attachment://dice.gif")
+            await ctx.send(embed=embed, file=file)
 
             await interaction.response.send_message(embed=embed, file=file)
-
         except d20.RollSyntaxError as e:
             await interaction.response.send_message(f"❌ Invalid dice expression: `{e}`", ephemeral=True)
 
