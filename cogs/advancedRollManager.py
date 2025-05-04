@@ -14,6 +14,10 @@ class AdvancedRollManager(commands.Cog):
         self.bot = bot
 
     def get_dice_rolls(self, diceType: int = 6, number_of_dices: int = 1, explosion: int = 6, success: int = 5) -> tuple:
+        emoji_map = {
+            1: "1️⃣", 2: "2️⃣", 3: "3️⃣", 4: "4️⃣", 5: "5️⃣",
+            6: "6️⃣", 7: "7️⃣", 8: "8️⃣", 9: "9️⃣", 10: "🔟"
+        }
         roll_results = [[]]
         success_result = 0
         messageString = ""
@@ -37,7 +41,11 @@ class AdvancedRollManager(commands.Cog):
             for result_roll in range(len(result_rolls)):
                 if messageString != "":
                     messageString += " "
-                messageString += "[{}]".format(result_rolls[result_roll])
+                if(diceType > 10):
+                    messageString += "[{}]".format(result_rolls[result_roll])
+                else:
+                    emoji = emoji_map.get(roll, f"[{roll}]")
+                    messageString += emoji
                 if result_rolls[result_roll] >= success:
                     success_result += 1
         return roll_results, success_result, messageString
