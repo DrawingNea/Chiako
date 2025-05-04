@@ -1,0 +1,10 @@
+discord.py
+python-dotenv
+mysql-connector-python-rf
+numpy
+requests
+fuzzywuzzy
+aiohttp
+aiomysql
+d20
+Pillow

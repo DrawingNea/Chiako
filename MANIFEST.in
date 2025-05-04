@@ -1,0 +1,14 @@
+# include license files
+include LICENSE
+
+# include requirements files
+include requirements.txt
+
+# include resources folder for cogs
+include resources
+
+# include images folders for cogs
+recursive-include images *
+
+# include sounds folder for cogs
+recursive-include sounds
