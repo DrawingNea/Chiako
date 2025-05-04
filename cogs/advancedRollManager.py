@@ -27,41 +27,53 @@ class AdvancedRollManager(commands.Cog):
         recurse(result.expr)
         return dice_values
 
-    def generate_dice_image(self, result: d20.RollResult) -> io.BytesIO:
-      dice_values = self.extract_dice_values(result)
+    def generate_dice_animation(self, result: d20.RollResult, roll_frames=10) -> io.BytesIO:
+        dice_values = self.extract_dice_values(result)
+        num_dice = len(dice_values)
 
-      size = 100
-      padding = 10
-      width = max(size * len(dice_values) + padding * 2, 500)
-      height = size + 60
+        size = 100
+        padding = 10
+        width = max(size * num_dice + padding * 2, 500)
+        height = size + 60
 
-      image = Image.new("RGB", (width, height), (30, 30, 30))
-      draw = ImageDraw.Draw(image)
+        try:
+            font = ImageFont.truetype("arial.ttf", 36)
+            font_big = ImageFont.truetype("arial.ttf", 48)
+        except:
+            font = ImageFont.load_default()
+            font_big = ImageFont.load_default()
 
-      try:
-          try:
-              font = ImageFont.truetype("arial.ttf", 36)
-              font_big = ImageFont.truetype("arial.ttf", 48)
-          except OSError:
-              font = ImageFont.truetype("path/to/fallback_font.ttf", 36)
-              font_big = ImageFont.truetype("path/to/fallback_font.ttf", 48)
-      except:
-          font = ImageFont.load_default()
-          font_big = ImageFont.load_default()
+        frames = []
 
-      for i, val in enumerate(dice_values):
-          x = padding + i * size
-          y = 10
-          draw.rectangle([x, y, x + size - 10, y + size - 10], fill=(200, 200, 200), outline=(0, 0, 0))
-          draw.text((x + 25, y + 25), str(val), font=font, fill=(0, 0, 0))
+        for frame_index in range(roll_frames):
+            image = Image.new("RGB", (width, height), (30, 30, 30))
+            draw = ImageDraw.Draw(image)
+            for i in range(num_dice):
+                x = padding + i * size
+                y = 10
+                val = random.randint(1, 20) if frame_index < roll_frames - 1 else dice_values[i]
+                draw.rectangle([x, y, x + size - 10, y + size - 10], fill=(200, 200, 200), outline=(0, 0, 0))
 
-      draw.text((padding, size + 20), f"Total: {result.total}", font=font_big, fill=(255, 255, 255))
+                text = str(val)
+                text_width, text_height = draw.textsize(text, font=font)
+                draw.text(
+                    (x + (size - 10 - text_width) / 2, y + (size - 10 - text_height) / 2),
+                    text,
+                    font=font,
+                    fill=(0, 0, 0)
+                )
 
-      output = io.BytesIO()
-      image.save(output, format='PNG')
-      output.seek(0)
-      return output
+            # Add total on final frame only
+            if frame_index == roll_frames - 1:
+                draw.text((padding, size + 20), f"Total: {result.total}", font=font_big, fill=(255, 255, 255))
 
+            frames.append(image)
+
+        # Save frames as a GIF
+        output = io.BytesIO()
+        frames[0].save(output, format='GIF', save_all=True, append_images=frames[1:], loop=0, duration=100)
+        output.seek(0)
+        return output
 
     @app_commands.command(name="roll", description="Roll some dice, like 2d20kh1 + 3")
     @app_commands.describe(
@@ -90,16 +102,16 @@ class AdvancedRollManager(commands.Cog):
         expression = f"{number_of_dices}d{diceType}e{diceExplosion}k{diceSuccess}"
         try:
             result = d20.roll(expression)
-            image_bytes = self.generate_dice_image(result)
-            file = discord.File(fp=image_bytes, filename="roll.png")
+            image_bytes = self.generate_dice_animation(result)
+            file = discord.File(fp=image_bytes, filename="roll.gif")
 
             embed = discord.Embed(
-                title="🎲 Dice Roll",
+                title="🎲 Rolling Dice...",
                 description=f"`{expression}` ➜ **{result.total}**",
                 color=discord.Color.green()
             )
             embed.add_field(name="Details", value=f"`{result.result}`", inline=False)
-            embed.set_image(url="attachment://roll.png")
+            embed.set_image(url="attachment://roll.gif")
 
             await interaction.response.send_message(embed=embed, file=file)
 
