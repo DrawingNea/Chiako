@@ -51,6 +51,34 @@ class DiceRollManager(commands.Cog):
             )
             await self.bot.send_message(ctx.message.channel, text)
 
+    def get_dice_rolls(self, diceType: int = 6, number_of_dices: int = 1, explosion: int = 6, success: int = 5) -> tuple:
+        roll_results = [[]]
+        success_result = 0
+        for _ in range(number_of_dices):
+            rollIndex = 0
+            roll = random.randint(1, diceType)
+            nested_list = roll_results[rollIndex]
+            nested_list.append(roll)
+            while roll >= explosion:
+                rollIndex = rollIndex + 1
+                roll = random.randint(1, diceType)
+                if (len(roll_results) - 1) < rollIndex:
+                    roll_results.append([roll])
+                else:
+                    nested_list = roll_results[rollIndex]
+                    nested_list.append(roll)
+        for index, result_rolls in enumerate(roll_results):
+            if index != 0:
+                messageString += "  - "
+            result_rolls.sort(reverse=True)
+            for result_roll in range(len(result_rolls)):
+                if messageString != "":
+                    messageString += " "
+                messageString += "[{}]".format(result_rolls[result_roll])
+                if result_rolls[result_roll] >= success:
+                    success_result += 1
+        return roll_results, success_result, messageString
+
     @commands.Cog.listener("on_message")
     async def diceroll(self, message):
         if (
@@ -81,35 +109,21 @@ class DiceRollManager(commands.Cog):
                 )
                 await cursor.execute(sql)
                 record = await cursor.fetchone()
+                diceRollNumbers = diceNumbers[0]
                 diceType = int(record[0])
                 diceExplosion = int(record[1])
                 diceSuccess = int(record[2])
-                roll_results = [[]]
                 messageString = "Results for " + message.author.mention + ":\n"
-                success_result = 0
-                for _ in range(diceNumbers[0]):
-                    rollIndex = 0
-                    roll = random.randint(1, diceType)
-                    nested_list = roll_results[rollIndex]
-                    nested_list.append(roll)
-                    while roll >= diceExplosion:
-                        rollIndex = rollIndex + 1
-                        roll = random.randint(1, diceType)
-                        if (len(roll_results) - 1) < rollIndex:
-                            roll_results.append([roll])
-                        else:
-                            nested_list = roll_results[rollIndex]
-                            nested_list.append(roll)
-                for index, result_rolls in enumerate(roll_results):
-                    if index != 0:
-                        messageString += "  - "
-                    result_rolls.sort(reverse=True)
-                    for result_roll in range(len(result_rolls)):
-                        if messageString != "":
-                            messageString += " "
-                        messageString += "[{}]".format(result_rolls[result_roll])
-                        if result_rolls[result_roll] >= diceSuccess:
-                            success_result += 1
+                result = self.get_dice_rolls(
+                    diceType=diceType,
+                    number_of_dices=diceRollNumbers,
+                    explosion=diceExplosion,
+                    success=diceSuccess,
+                )
+                messageString += result[2]
+                success_result = result[1]
+                roll_results = result[0]
+
                 messageString += "\n**Successful: {}**".format(success_result)
                 await message.channel.send(content=messageString, reference=message)
 
