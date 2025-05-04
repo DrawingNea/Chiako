@@ -94,7 +94,7 @@ class AdvancedRollManager(commands.Cog):
         plt.title("Overview of your last 10 Rolls")
         plt.xlabel("Roll #")
         plt.ylabel("Probability Score")
-        plt.xticks(range(len(last_rolls)))
+        plt.xticks(range(len(last_rolls) + 1))
         plt.ylim(0, 10)
         plt.grid(True)
 
