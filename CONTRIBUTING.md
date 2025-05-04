@@ -36,10 +36,10 @@ This project uses [`Conventional Commits 1.0.0`](https://conventionalcommits.org
 
 It would be more than welcome to keep your contributions as a single commit rather than, for examples, 20 `"fix: Stuff"` commits in-between. You may use multiple commits if you believe the changes made in these commits have nothing, or close to nothing, in common - feel free to ask a maintainer on whether or not it should be a single commit or not.
 
-## Create a GitHub [Issue](https://github.com/DrawingNea/ChiakoBot/issues) and **then** a pull request
+## Create a GitHub [Issue](https://github.com/DrawingNea/Chiako/issues) and **then** a pull request
 
-Start contributing by first [opening a new issue](https://github.com/DrawingNea/ChiakoBot/issues/new/choose). Once that is done, you can create a pull request for the issue.
+Start contributing by first [opening a new issue](https://github.com/DrawingNea/Chiako/issues/new/choose). Once that is done, you can create a pull request for the issue.
 
 ## License
 
-Your submissions are understood to be under the same [Apache License 2.0](https://github.com/DrawingNea/ChiakoBot/blob/main/LICENSE.md) that covers the project.
+Your submissions are understood to be under the same [Apache License 2.0](https://github.com/DrawingNea/Chiako/blob/main/LICENSE.md) that covers the project.
