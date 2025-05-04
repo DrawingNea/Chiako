@@ -118,11 +118,11 @@ class AdvancedRollManager(commands.Cog):
         diceExplosion = int(record[1])
         diceSuccess = int(record[2])
         try:
+            roll_results, success_count, message = self.get_dice_rolls(diceType, number_of_dices, diceExplosion, diceSuccess)
+            gif_path = self.generate_dice_roll_gif(roll_results)
             max_success_display = 10
             filled = min(success_count, max_success_display)
             bar = "🟩" * filled + "⬜" * (max_success_display - filled)
-            roll_results, success_count, message = self.get_dice_rolls(diceType, number_of_dices, diceExplosion, diceSuccess)
-            gif_path = self.generate_dice_roll_gif(roll_results)
 
             file = discord.File(gif_path, filename="dice.gif")
             embed = discord.Embed(title=f"**Successful:** {success_count}\n{bar}", description=message, color=0x00ff00)
