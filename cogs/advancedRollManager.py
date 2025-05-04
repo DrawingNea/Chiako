@@ -17,14 +17,15 @@ class AdvancedRollManager(commands.Cog):
 
         def recurse(term):
             if isinstance(term, d20.ast.Die):
-                dice_values.extend([roll.value for roll in term.rolls])
-            elif hasattr(term, "terms"):
-                for subterm in term.terms:
-                    recurse(subterm)
+                for roll in term.rolls:
+                    if not roll.dropped:
+                        dice_values.append(roll.value)
+            elif hasattr(term, "children"):
+                for child in term.children:
+                    recurse(child)
 
-        recurse(result.exploded)
+        recurse(result.ast)
         return dice_values
-
     def generate_dice_image(self, result: d20.RollResult) -> io.BytesIO:
       dice_values = self.extract_dice_values(result)
 
