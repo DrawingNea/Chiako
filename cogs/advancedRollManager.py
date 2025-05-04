@@ -9,11 +9,11 @@ class AdvancedRollManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def binomial_probability(self, dice_type: int, number_of_dices: int, success_threshold: int) -> float:
+    def binomial_probability(self, dice_type: int, number_of_dices: int, actual_successes: int, success_threshold: int) -> float:
         """Calculate P(X ≥ k) for a binomial distribution."""
         n = number_of_dices  # number of trials (dices rolled)
-        k = success_threshold
-        p = (dice_type - success_threshold + 1) / dice_type  # (10 - 7 + 1) / 10 = 0.4
+        k = actual_successes
+        p = (dice_type - success_threshold + 1) / dice_type
         prob = 0.0
         for i in range(k, n + 1):
             comb = math.comb(n, i)
@@ -99,7 +99,7 @@ class AdvancedRollManager(commands.Cog):
         diceSuccess = int(record[2])
         try:
             roll_results, success_count, message = self.get_dice_rolls(diceType, number_of_dices, diceExplosion, diceSuccess)
-            probability = self.binomial_probability(diceType, number_of_dices, diceSuccess)
+            probability = self.binomial_probability(diceType, number_of_dices, success_count, diceSuccess)
             filled_count = round(probability / 10)
             bar = "🟩" * filled_count + "⬜" * (10 - filled_count)
             color = self.get_embed_color_by_success_rate(success_count, number_of_dices)
