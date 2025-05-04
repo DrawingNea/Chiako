@@ -89,7 +89,7 @@ class AdvancedRollManager(commands.Cog):
 
         # Create a plot
         plt.figure(figsize=(8, 4))  # Adjust the size of the graph
-        plt.plot(range(len(last_rolls)), last_rolls, marker='o', color='green', linestyle='-', linewidth=2, markersize=5)
+        plt.plot(range(1, len(last_rolls) + 1), last_rolls, marker='o', color='green', linestyle='-', linewidth=2, markersize=5)
 
         plt.title("Overview of your last 10 Rolls")
         plt.xlabel("Roll #")
