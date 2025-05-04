@@ -48,7 +48,7 @@ class AdvancedRollManager(commands.Cog):
         draw = ImageDraw.Draw(img)
         draw.rectangle([0, 0, size[0], size[1]], outline="black", width=4)
         font = ImageFont.load_default()
-        w, h = draw.textsize(str(number), font=font)
+        w, h = font.getsize(str(number))
         draw.text(((size[0] - w) // 2, (size[1] - h) // 2), str(number), fill="black", font=font)
         return img
 
