@@ -75,7 +75,7 @@ class AdvancedRollManager(commands.Cog):
 
         return (red << 16) + (green << 8) + blue
 
-    async def generate_graph(self, user_id: int):
+    async def generate_graph(self, user_id: int) -> io.BytesIO:
         """
         Generates a bar graph for the last 10 rolls and returns it as a file-like object
         """
@@ -89,12 +89,14 @@ class AdvancedRollManager(commands.Cog):
 
         # Create a plot
         plt.figure(figsize=(8, 4))  # Adjust the size of the graph
-        plt.bar(range(len(last_rolls)), last_rolls, color='green')
+        plt.plot(range(len(last_rolls)), last_rolls, marker='o', color='green', linestyle='-', linewidth=2, markersize=5)
 
-        plt.title("Last 10 Rolls - Success Scores")
+        plt.title("Overview of your last 10 Rolls")
         plt.xlabel("Roll #")
-        plt.ylabel("Success Score")
+        plt.ylabel("Probability Score")
         plt.xticks(range(len(last_rolls)))
+        plt.ylim(0, 10)
+        plt.grid(True)
 
         # Save the plot to a BytesIO object
         image_buffer = io.BytesIO()
