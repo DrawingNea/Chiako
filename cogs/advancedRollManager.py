@@ -1,12 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import d20
-from PIL import Image, ImageDraw, ImageFont
-import io
-import re
 from typing import Optional
-from typing import List
 import random
 
 class AdvancedRollManager(commands.Cog):
@@ -50,57 +45,6 @@ class AdvancedRollManager(commands.Cog):
                     success_result += 1
         return roll_results, success_result, messageString
 
-    # Image generation helpers
-    def generate_dice_face(self, number: int, size=(100, 100)):
-        img = Image.new("RGB", size, "white")
-        draw = ImageDraw.Draw(img)
-        draw.rectangle([0, 0, size[0], size[1]], outline="black", width=4)
-
-        font = ImageFont.load_default()
-        text = str(number)
-
-        try:
-            # Preferred method in modern Pillow
-            bbox = draw.textbbox((0, 0), text, font=font)
-            w = bbox[2] - bbox[0]
-            h = bbox[3] - bbox[1]
-        except AttributeError:
-            # Fallback for older versions
-            w, h = draw.textsize(text, font=font)
-
-        draw.text(((size[0] - w) // 2, (size[1] - h) // 2), text, fill="black", font=font)
-        return img
-
-    def concatenate_faces(self, images):
-        widths, heights = zip(*(img.size for img in images))
-        total_width = sum(widths)
-        max_height = max(heights)
-        result = Image.new("RGB", (total_width, max_height), "white")
-        x_offset = 0
-        for im in images:
-            result.paste(im, (x_offset, 0))
-            x_offset += im.size[0]
-        return result
-
-    def generate_dice_roll_gif(self, roll_results, output_path="dice_roll.gif", duration=0.1):
-        frames = []
-        for result_group in roll_results:
-            for _ in range(5):  # Flickering animation
-                temp_rolls = [random.randint(1, 6) for _ in result_group]
-                frame = self.concatenate_faces([self.generate_dice_face(r) for r in temp_rolls])
-                frames.append(frame)
-            final_frame = self.concatenate_faces([self.generate_dice_face(r) for r in result_group])
-            frames.append(final_frame)
-
-        frames[0].save(
-            output_path,
-            save_all=True,
-            append_images=frames[1:],
-            duration=int(duration * 1000),
-            loop=0
-        )
-        return output_path
-
     @app_commands.command(name="roll", description="Roll some dice, like 2d20kh1 + 3")
     @app_commands.describe(
         number_of_dices="How many dices to roll",
@@ -127,18 +71,14 @@ class AdvancedRollManager(commands.Cog):
         diceSuccess = int(record[2])
         try:
             roll_results, success_count, message = self.get_dice_rolls(diceType, number_of_dices, diceExplosion, diceSuccess)
-            gif_path = self.generate_dice_roll_gif(roll_results)
             max_success_display = 10
             filled = min(success_count, max_success_display)
             bar = "🟩" * filled + "⬜" * (max_success_display - filled)
-
-            file = discord.File(gif_path, filename="dice.gif")
             embed = discord.Embed(title=f"**Successful:** {success_count}\n{bar}", description=message, color=0x00ff00)
-            embed.set_image(url="attachment://dice.gif")
 
-            await interaction.response.send_message(embed=embed, file=file)
-        except d20.RollSyntaxError as e:
-            await interaction.response.send_message(f"❌ Invalid dice expression: `{e}`", ephemeral=True)
+            await interaction.response.send_message(embed=embed)
+        except Exception as e:
+            await interaction.response.send_message(f"Could not roll the dice")
 
 async def setup(bot):
     await bot.add_cog(AdvancedRollManager(bot))
