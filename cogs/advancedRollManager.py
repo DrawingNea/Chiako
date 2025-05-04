@@ -107,6 +107,7 @@ class AdvancedRollManager(commands.Cog):
 
             await interaction.response.send_message(embed=embed)
         except Exception as e:
+            print(f"Error: {e}")
             await interaction.response.send_message(f"Could not roll the dice")
 
 async def setup(bot):
