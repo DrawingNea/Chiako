@@ -8,6 +8,7 @@ import re
 from typing import Optional
 from typing import List
 import random
+import pydice
 
 class AdvancedRollManager(commands.Cog):
     def __init__(self, bot):
@@ -51,13 +52,13 @@ class AdvancedRollManager(commands.Cog):
     # Generate an animated roll for any die type (d6, d12, d20, etc.)
     def generate_dice_roll_gif(sides, rolls, output_path="dice_roll.gif", duration=0.1):
         frames = []
-        
+
         # Generate a smooth rolling effect by changing faces randomly
         for _ in range(15):  # Create 15 frames for smooth animation
             rand_num = random.randint(1, sides)  # Random face between 1 and 'sides'
             frame = generate_dice_face(rand_num, sides)
             frames.append(frame)
-        
+
         # Add the actual roll results
         for roll in rolls:
             frame = generate_dice_face(roll, sides)
@@ -102,10 +103,10 @@ class AdvancedRollManager(commands.Cog):
         diceSuccess = int(record[2])
         expression = f"{number_of_dices}d{diceType}e{diceExplosion}k{diceSuccess}"
         try:
-            dice_roll = d20.roll(expression)
-            roll_results = [die.result for die in dice_roll.dice]
-            sides = dice_roll.dice[0].sides if dice_roll.dice else 6
-            rolls = roll_results
+            roll_result = pydice.roll(expression)
+            roll_results = roll_result.result
+            sides = diceType
+            rolls = [die.result for die in roll_result.dice]
             gif_path, final_rolls = self.generate_dice_roll_gif(sides, rolls)
             file = discord.File(gif_path, filename="dice.gif")
             embed = discord.Embed(title=f"Roll Result: {', '.join(map(str, final_rolls))}", color=0x00ff00)
