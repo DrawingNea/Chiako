@@ -13,7 +13,19 @@ class AdvancedRollManager(commands.Cog):
         self.bot = bot
 
     def extract_dice_values(self, result: d20.RollResult) -> List[int]:
-        return [r.value for r in result.rolls if not r.dropped]
+        dice_values = []
+
+        def recurse(term):
+            if hasattr(term, "children"):  # composite term
+                for child in term.children:
+                    recurse(child)
+            elif hasattr(term, "rolls"):  # Die node
+                for roll in term.rolls:
+                    if not roll.dropped:
+                        dice_values.append(roll.value)
+
+        recurse(result.expr)
+        return dice_values
 
     def generate_dice_image(self, result: d20.RollResult) -> io.BytesIO:
       dice_values = self.extract_dice_values(result)
