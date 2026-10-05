@@ -33,6 +33,8 @@ async def export_character(db: Database, ch: Character, *, with_companions: bool
         "temp_hp": temp,
         "xp": await db.get_xp(ch.id),
         "color": ch.color,
+        "profile": ch.profile,
+        "bio": ch.bio,
         "items": [{"name": i.name, "qty": i.qty, "note": i.note}
                   for i in await db.list_items(ch.campaign_id, ch.id)],
         "money": await db.get_money(ch.campaign_id, ch.id),
@@ -139,6 +141,16 @@ def validate_payload(data, *, nested: bool = False) -> dict:
     out["temp_hp"] = _int(data.get("temp_hp", 0), "temp_hp", 0, 1_000_000)
     out["xp"] = _int(data.get("xp", 0), "xp", 0, 1_000_000_000)
     out["color"] = _int(data.get("color"), "color", 0, 0xFFFFFF, optional=True)
+    out["bio"] = _str(data.get("bio"), "bio", 1000, optional=True)
+    profile = data.get("profile") or []
+    if not isinstance(profile, list) or len(profile) > 25:
+        _fail("profile must be a list of at most 25 [field, value] pairs.")
+    out["profile"] = []
+    for pair in profile:
+        if not isinstance(pair, list) or len(pair) != 2:
+            _fail("every profile entry must be a [field, value] pair.")
+        out["profile"].append([" ".join(_str(pair[0], "profile field", 32).split()),
+                               " ".join(_str(pair[1], "profile value", 100).split())])
 
     items = data.get("items") or []
     if not isinstance(items, list) or len(items) > 500:
@@ -194,8 +206,9 @@ async def import_character(db: Database, campaign_id: int, owner_id: int, data: 
             await db.set_resource(Resource(ch.id, name, cur, mx, reset))
         await db.set_character_state(ch.id, c["hp"], c["temp_hp"])
         await db.set_xp(ch.id, c["xp"])
-        if c["color"] is not None:
-            await db.update_character(ch.id, color=c["color"])
+        extra = {k: c[k] for k in ("color", "bio", "profile") if c[k]}
+        if extra:
+            await db.update_character(ch.id, **extra)
         for name, qty, note in c["items"]:
             await db.add_item(campaign_id, ch.id, name, qty, note)
         for cur, amount in c["money"].items():

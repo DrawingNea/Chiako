@@ -131,6 +131,9 @@ Setz einen Wurf in doppelte eckige Klammern, irgendwo in deiner Nachricht:
 • `/char use` wechselt deinen aktiven Charakter, `/char list` zeigt alle deine Charaktere.
 • `/char show` zeigt deinen **Charakterbogen** als Karte: Bild, Lebenspunkte, Stufe, Zustände, Werte,
   Fertigkeiten, Ressourcen, Inventar und Geld. Mit `public:True` sieht ihn der ganze Tisch.
+• `/char profile field:Alter value:24` füllt deinen Steckbrief: Alter, Haare, Augen, Rasse, Größe
+  oder was euer Spiel sonst braucht. Ohne `value` wird das Feld entfernt.
+• `/char description` öffnet einen Editor für eine kurze Beschreibung, die direkt unter deinem Namen steht.
 • `/char color` gibt deiner Karte eine eigene Farbe (`#8e44ad`, `purple`, …).
 • `/char avatar`, `/char rename` und `/char delete` machen, was sie sagen.
 Du kannst mehrere Charaktere pro Kampagne haben und jederzeit wechseln. Die SL kann den Bogen mit

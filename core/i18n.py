@@ -153,6 +153,17 @@ DE: dict[str, str] = {
         "Bogen-Layout für **{campaign}** gespeichert. Schau es dir mit `/char show` an.",
     "The sheet layout is back to automatic.": "Der Charakterbogen ordnet sich wieder automatisch.",
 
+    # ---------------------------------------------------------------- profile & description
+    "Profile": "Steckbrief",
+    "Description (leave empty to remove it)": "Beschreibung (leer lassen zum Entfernen)",
+    "A wiry half-elf with a crooked smile, always one step ahead of her debts.":
+        "Eine drahtige Halbelfe mit schiefem Lächeln, ihren Schulden immer einen Schritt voraus.",
+    "Description of **{name}** saved.": "Beschreibung von **{name}** gespeichert.",
+    "Description of **{name}** removed.": "Beschreibung von **{name}** entfernt.",
+    "**{name}** has no **{field}** in the profile.": "**{name}** hat kein Feld **{field}** im Steckbrief.",
+    "Removed **{field}** from **{name}**'s profile.": "**{field}** aus dem Steckbrief von **{name}** entfernt.",
+    "**{name}**'s profile: **{field}** {value}": "Steckbrief von **{name}**: **{field}** {value}",
+
     # ---------------------------------------------------------------- /help
     "Choose a chapter…": "Kapitel wählen…",
     "Back": "Zurück",

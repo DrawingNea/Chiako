@@ -112,6 +112,23 @@ async def _session(db):
     # ---------------------------------------------------------------- character sheet card
     await step("Card colour", invoke(chars.char_color, chars, as_(anna), color="purple"), r"#9b59b6")
     await step("Unknown colour", invoke(chars.char_color, chars, as_(anna), color="sparkly"), "hex colour", "ephemeral")
+
+    # profile & description
+    assert (await autocomplete(chars.char_profile, as_(anna), "field", "aug")) == ["Augen"]
+    await step("Profile field", invoke(chars.char_profile, chars, as_(anna), field="Alter", value="19"),
+               r"Steckbrief von \*\*Lyra\*\*: \*\*Alter\*\* 19")
+    await invoke(chars.char_profile, chars, as_(anna), field="Haare", value="lang,   silbern")
+    await invoke(chars.char_profile, chars, as_(anna), field="Herkunft", value="Thorwal")
+    await step("Updating a field ignores capitalisation", invoke(chars.char_profile, chars, as_(anna), field="alter",
+                                                                  value="20"), r"\*\*Alter\*\* 20")
+    await step("Removing a field", invoke(chars.char_profile, chars, as_(anna), field="Herkunft"),
+               r"\*\*Herkunft\*\* aus dem Steckbrief von \*\*Lyra\*\* entfernt")
+    await step("Removing a field that isn't there", invoke(chars.char_profile, chars, as_(anna), field="Augen"),
+               r"hat kein Feld \*\*Augen\*\*", "ephemeral")
+    inter = as_(anna)
+    await invoke(chars.char_description, chars, inter)
+    await step("Description", submit_modal(inter.modal, as_(anna), text="Eine Elfe mit Ziel.\nUnd mit Seil."),
+               r"Beschreibung von \*\*Lyra\*\* gespeichert")
     await step("Players can't lay out the sheet", invoke(camp.sheet, camp, as_(anna)), "Only the GM")
     inter = as_(gm)
     await invoke(camp.sheet, camp, inter)
@@ -124,6 +141,8 @@ async def _session(db):
                r"Bogen-Layout für \*\*Das Schwarze Auge\*\* gespeichert")
     out = await step("The card follows the layout", invoke(chars.char_show, chars, as_(anna)),
                      r"Charakterbogen · gespielt von Anna.*\*\*Lyra\*\*.*▰+ \*\*20\*\*/20\n\s*0 EP"
+                     r"\n\s*\n\s*> Eine Elfe mit Ziel\.\n\s*> Und mit Seil\."
+                     r".*Steckbrief: `Alter` 20\n\s*`Haare` lang, silbern"
                      r".*Eigenschaften: `MU` \*\*12\*\*\n\s*`GE` \*\*14\*\*.*Kampf: `LeP` \*\*20\*\*"
                      r".*Weitere: `KK   ` \*\*11\*\*\n\s*`Level` \*\*1\*\*.*Inventar: • \*\*Seil\*\* · \*15 m\*.*20 Dukaten")
     assert out[0].embeds[0].color.value == 0x9B59B6
@@ -134,6 +153,8 @@ async def _session(db):
     data = json.loads(out[0].file.fp.read())
     assert data["items"] == [{"name": "Seil", "qty": 1, "note": "15 m"}] and data["money"] == {"Dukaten": 20}
     assert data["color"] == 0x9B59B6
+    assert data["profile"] == [["Alter", "20"], ["Haare", "lang, silbern"]]
+    assert data["bio"] == "Eine Elfe mit Ziel.\nUnd mit Seil."
     await invoke(chars.char_import, chars, as_(ben), file=FakeAttachment("Lyra.json", json.dumps(data).encode()),
                  name="Lyra II")
     await step("The copy has the inventory too", invoke(inv.inventory, inv, as_(ben), whose="Lyra II"),

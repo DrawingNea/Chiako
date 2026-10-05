@@ -9,7 +9,7 @@ from __future__ import annotations
 import functools
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 import aiosqlite
@@ -305,6 +305,8 @@ MIGRATIONS = [
     ("campaigns", "language", "TEXT NOT NULL DEFAULT 'en'"),   # 'en' or 'de'
     ("campaigns", "sheet_layout", "TEXT"),                     # the GM's character sheet layout, see core/sheetcard
     ("characters", "color", "INTEGER"),                        # the character card's accent colour
+    ("characters", "profile", "MEDIUMTEXT"),                   # JSON [[field, value], ...]: age, hair, eyes…
+    ("characters", "bio", "MEDIUMTEXT"),                       # a short description
 ]
 
 # The same tables for MySQL/MariaDB, including every column from MIGRATIONS.
@@ -346,6 +348,8 @@ MYSQL_SCHEMA = [
         created_at   BIGINT NOT NULL,
         parent_id    BIGINT,
         color        BIGINT,
+        profile      MEDIUMTEXT,
+        bio          MEDIUMTEXT,
         UNIQUE (campaign_id, owner_id, name),
         FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
         FOREIGN KEY (parent_id) REFERENCES characters(id) ON DELETE CASCADE
@@ -617,6 +621,8 @@ class Character:
     avatar_url: Optional[str]
     parent_id: Optional[int] = None   # set for companions
     color: Optional[int] = None       # accent colour of the character card
+    profile: list = field(default_factory=list)   # [[field, value], ...] in the player's order
+    bio: Optional[str] = None         # short description
 
     @property
     def is_companion(self) -> bool:
@@ -785,8 +791,10 @@ def _character(row) -> Optional[Character]:
     if row is None:
         return None
     keys = row.keys()
+    profile = json.loads(row["profile"]) if "profile" in keys and row["profile"] else []
     return Character(row["id"], row["campaign_id"], row["owner_id"], row["name"], row["avatar_url"],
-                     row["parent_id"] if "parent_id" in keys else None, row["color"] if "color" in keys else None)
+                     row["parent_id"] if "parent_id" in keys else None, row["color"] if "color" in keys else None,
+                     profile, row["bio"] if "bio" in keys else None)
 
 
 class Database:
@@ -968,9 +976,11 @@ class Database:
         return [_character(r) for r in rows]
 
     async def update_character(self, character_id: int, **fields):
-        allowed = {"name", "avatar_url", "color"}
+        allowed = {"name", "avatar_url", "color", "profile", "bio"}
         if not fields or not set(fields) <= allowed:
             raise ValueError("invalid character fields")
+        if "profile" in fields:
+            fields["profile"] = json.dumps(fields["profile"], ensure_ascii=False) if fields["profile"] else None
         sets = ", ".join(f"{k} = ?" for k in fields)
         await self._run(f"UPDATE characters SET {sets} WHERE id = ?", *fields.values(), character_id)
 

@@ -84,7 +84,7 @@ a GM's roll is private and gets a *Reveal* button); `/pbta` makes a 2d6 + stat m
 Every public roll has a 🎲 *Reroll* button.
 
 **Characters:**
-`/char create | use | list | show | color | avatar | rename | delete`. Each player can have several characters
+`/char create | use | list | show | profile | description | color | avatar | rename | delete`. Each player can have several characters
 per campaign and switch between them. `/char show` posts the character sheet card (see *Character sheet card*).
 
 **Stats:**
@@ -215,7 +215,7 @@ switching. Companions show up on the dashboard and can be targeted by `/hp` and 
 
 **Export/import:**
 `/char export` gives you a JSON file of the character and its companions (stats, skills, resources,
-HP, XP, inventory, money, and the card colour). `/char import` takes that file into any campaign or server, with `name:` to rename it.
+HP, XP, inventory, money, profile, description, and the card colour). `/char import` takes that file into any campaign or server, with `name:` to rename it.
 The file is fully validated before anything is written.
 
 **Random tables:**
@@ -310,7 +310,10 @@ inventories, and deleting a character removes its inventory.
 
 **Character sheet card:**
 `/char show` shows a card with the portrait, the card colour (`/char color #8e44ad` or `purple`), HP bar,
-XP and level, conditions, stats, skills, resources, inventory and money. The GM shapes it for their game with
+XP and level, conditions, a short description (`/char description` opens an editor), a profile with any
+details you like (`/char profile field:Age value:24`, `field:Hair value:silver`; common fields are
+suggested, in German for German campaigns), stats, skills, resources, inventory and money. Sections with
+many entries are shown as a three-column grid. The GM shapes it for their game with
 `/campaign sheet`, one section per line:
 ```
 Attributes: str, dex, con, int, wis, cha

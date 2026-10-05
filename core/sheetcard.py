@@ -137,6 +137,53 @@ def _lines(entries: list[tuple[str, str]], sheet: Sheet) -> list[str]:
     return out
 
 
+GRID_AFTER = 6    # sections with more entries than this are split into columns
+GRID_COLUMNS = 3  # Discord shows at most three inline fields side by side
+BLANK = "​"  # an empty field name/value
+
+
+class _Fields:
+    """Adds embed fields and keeps track of the current row, so a grid always starts on a row of its own."""
+
+    def __init__(self, embed: discord.Embed):
+        self.e, self.in_row = embed, 0
+
+    def add(self, name: str, value: str, inline: bool):
+        self.e.add_field(name=name, value=value[:1024] or BLANK, inline=inline)
+        self.in_row = (self.in_row + 1) % GRID_COLUMNS if inline else 0
+
+    def new_row(self):
+        if self.in_row:
+            self.add(BLANK, BLANK, inline=False)
+
+    def section(self, title: str, entries: list[tuple[str, str]], sheet: Sheet):
+        """Stats/skills: a short section is one column; a long one becomes a grid, read column by column."""
+        self.grid(title, entries, lambda chunk: _lines(chunk, sheet))
+
+    def grid(self, title: str, entries: list, render):
+        if len(entries) <= GRID_AFTER:
+            self.add(title, "\n".join(render(entries)), inline=True)
+            return
+        self.new_row()
+        per = -(-len(entries) // GRID_COLUMNS)  # rounded up
+        for i in range(GRID_COLUMNS):
+            chunk = entries[i * per:(i + 1) * per]
+            if chunk:
+                self.add(title if i == 0 else BLANK, "\n".join(render(chunk)), inline=True)
+        self.in_row = 0  # the grid filled its row
+
+
+PROFILE_COLUMN = 22  # longest profile line that still fits in a grid column without wrapping
+
+
+def _profile_width(pairs: list) -> int:
+    return min(12, max((len(k) for k, _ in pairs), default=0))
+
+
+def _profile_lines(pairs: list, width: int) -> list[str]:
+    return [f"`{k:<{width}}` {v}" for k, v in pairs]
+
+
 def _chunks(lines: list[str], limit: int = 1024) -> list[str]:
     chunks, cur = [], ""
     for line in lines:
@@ -170,7 +217,21 @@ def build_card(d: CardData) -> discord.Embed:
         head.append(f"{d.xp_text}")
     if d.conditions:
         head.append(", ".join(d.conditions))
-    e.description = "\n".join(head) or None
+    if c.bio:
+        head.append(("\n" if head else "") + "\n".join(f"> {line}" if line else ">" for line in c.bio.splitlines()))
+    e.description = "\n".join(head)[:4000] or None
+
+    fields = _Fields(e)
+    if c.profile:
+        # One label width for the whole profile, so every column lines up. Short details become a grid;
+        # if one is too long for a grid column, the profile is a single full-width list instead.
+        width = _profile_width(c.profile)
+        if all(width + 1 + len(v) <= PROFILE_COLUMN for _, v in c.profile):
+            fields.grid(t(lang, "Profile"), c.profile, lambda chunk: _profile_lines(chunk, width))
+        else:
+            for i, chunk in enumerate(_chunks(_profile_lines(c.profile, width))[:3]):
+                fields.add(t(lang, "Profile") if i == 0 else BLANK, chunk, inline=False)
+        fields.new_row()
 
     # Stat sections: the GM's layout, then everything it doesn't mention
     shown: set[str] = set()
@@ -178,41 +239,44 @@ def build_card(d: CardData) -> discord.Embed:
     for title, entries in sections:
         shown.update(name for _, name in entries)
         if entries:
-            e.add_field(name=title, value="\n".join(_lines(entries, sheet))[:1024], inline=True)
+            fields.section(title, entries, sheet)
     rest = [n for n in sheet.stats if n not in shown]
     if sections:
         if rest:
-            e.add_field(name=t(lang, "More"), inline=True,
-                        value="\n".join(_lines([(default_label(n), n) for n in rest], sheet))[:1024])
+            fields.section(t(lang, "More"), [(default_label(n), n) for n in rest], sheet)
     else:
         base = [n for n in rest if not sheet.is_derived(n)]
         derived = [n for n in rest if sheet.is_derived(n)]
         for title, names in ((t(lang, "Stats"), base), (t(lang, "Derived"), derived)):
             if names:
-                e.add_field(name=title, inline=True,
-                            value="\n".join(_lines([(default_label(n), n) for n in names], sheet))[:1024])
+                fields.section(title, [(default_label(n), n) for n in names], sheet)
     if not sheet.stats:
-        e.add_field(name=t(lang, "Stats"), value=t(lang, "*none yet: `/stat set`*"), inline=False)
+        fields.add(t(lang, "Stats"), t(lang, "*none yet: `/stat set`*"), inline=False)
 
-    # Skills (those not already in the layout)
+    # Skills not already in the layout: a grid when the values are short (like dice counts),
+    # a full-width list when they're longer formulas
     skills = [s for s in sheet.skills.values() if s.name not in shown]
     if skills:
-        lines = _lines([(default_label(s.name), s.name) for s in skills], sheet)
-        for i, chunk in enumerate(_chunks(lines)[:3]):
-            e.add_field(name=t(lang, "Skills") if i == 0 else "​", value=chunk, inline=False)
+        entries = [(default_label(s.name), s.name) for s in skills]
+        if all(len(_value(sheet, s.name) or "") <= 8 for s in skills):
+            fields.new_row()
+            fields.section(t(lang, "Skills"), entries, sheet)
+        else:
+            for i, chunk in enumerate(_chunks(_lines(entries, sheet))[:3]):
+                fields.add(t(lang, "Skills") if i == 0 else BLANK, chunk, inline=False)
 
     if d.resources:
         lines = [f"`{name}` {_bar(cur, mx, 6)}**{cur}**/{mx}" for name, cur, mx in d.resources]
-        e.add_field(name=t(lang, "Resources"), value="\n".join(lines)[:1024], inline=False)
+        fields.add(t(lang, "Resources"), "\n".join(lines), inline=False)
 
     if d.items or d.money:
         lines = item_lines(d.items, lang, CARD_ITEMS) if d.items else []
         if d.money:
-            lines.append(f"{fmt_money(d.money)}")
-        e.add_field(name=t(lang, "Inventory"), value="\n".join(lines)[:1024], inline=False)
+            lines.append(fmt_money(d.money))
+        fields.add(t(lang, "Inventory"), "\n".join(lines), inline=False)
 
     if d.companions:
-        e.add_field(name=t(lang, "Companions"), value=", ".join(d.companions)[:1024], inline=False)
+        fields.add(t(lang, "Companions"), ", ".join(d.companions), inline=False)
 
     # Discord allows 6000 characters per embed: drop the last fields if a huge sheet gets too long
     while len(e) > 5900 and len(e.fields) > 1:

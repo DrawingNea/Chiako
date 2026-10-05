@@ -139,6 +139,9 @@ Put a roll in double square brackets anywhere in a message: `I swing my axe [[1d
 • `/char use` switches your active character and `/char list` shows all of yours.
 • `/char show` shows your **character sheet card**: picture, HP, level, conditions, stats, skills,
   resources, inventory and money. Add `public:True` to show it to the table.
+• `/char profile field:Age value:24` adds details to your card: age, hair, eyes, race, height, or
+  anything your game needs. Leave out `value` to remove a field.
+• `/char description` opens an editor for a short description, shown right under your name.
 • `/char color` gives your card its own colour (`#8e44ad`, `purple`, …).
 • `/char avatar`, `/char rename` and `/char delete` do what they say.
 You can have several characters in a campaign and switch between them at any time.

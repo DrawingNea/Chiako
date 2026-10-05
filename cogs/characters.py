@@ -16,6 +16,7 @@ from core.helpers import (
     COLOR_INFO, BaseView, UserError, get_campaign, load_sheet, require_campaign, require_character, require_gm,
 )
 from core.sheet import RollEnv, Sheet
+from core.i18n import t
 from core.sheetcard import CardData, build_card
 from dice.engine import DiceError, UnknownReference, example_call, macro_params, validate_name
 
@@ -73,6 +74,40 @@ def chunk_lines(lines: list[str], limit: int = 1024) -> list[str]:
     if cur:
         chunks.append(cur)
     return chunks
+
+
+PROFILE_FIELDS = {
+    "en": ["Age", "Gender", "Pronouns", "Race", "Nationality", "Height", "Weight", "Hair", "Eyes", "Occupation",
+           "Birthday", "Hometown", "Alignment", "Faith", "Languages"],
+    "de": ["Alter", "Geschlecht", "Pronomen", "Rasse", "Nationalität", "Größe", "Gewicht", "Haare", "Augen", "Beruf",
+           "Geburtstag", "Heimat", "Gesinnung", "Glaube", "Sprachen"],
+}
+MAX_PROFILE_FIELDS = 25
+MAX_BIO = 1000
+
+
+class DescriptionModal(discord.ui.Modal):
+    """A short description of the character, shown on the sheet card."""
+
+    def __init__(self, cog: "Characters", character: Character, lang: str):
+        super().__init__(title=f"{character.name}"[:45])
+        self.cog, self.character, self.lang = cog, character, lang
+        self.text = discord.ui.TextInput(
+            label=t(lang, "Description (leave empty to remove it)"), style=discord.TextStyle.paragraph,
+            default=character.bio or None, max_length=MAX_BIO, required=False,
+            placeholder=t(lang, "A wiry half-elf with a crooked smile, always one step ahead of her debts."))
+        self.add_item(self.text)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        bio = (self.text.value or "").strip() or None
+        await self.cog.db.update_character(self.character.id, bio=bio)
+        await interaction.response.send_message(
+            t(self.lang, "Description of **{name}** saved." if bio else "Description of **{name}** removed.",
+              name=self.character.name), ephemeral=True)
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception):
+        from core.helpers import report_error
+        await report_error(interaction, error)
 
 
 class ConfirmDelete(BaseView):
@@ -240,6 +275,56 @@ class Characters(commands.Cog):
             parent = await self.db.get_character(c.parent_id)
             data.parent = parent.name if parent else "?"
         return build_card(data)
+
+    # ------------------------------------------------------------------ profile & description
+
+    async def profile_field_ac(self, interaction: discord.Interaction, current: str):
+        campaign = await get_campaign(self.db, interaction.channel)
+        lang = campaign.language if campaign else "en"
+        options = []
+        if campaign:
+            c = await self.db.get_active_character(campaign.id, interaction.user.id)
+            options += [k for k, _ in (c.profile if c else [])]
+        options += [f for f in PROFILE_FIELDS.get(lang, PROFILE_FIELDS["en"]) if f not in options]
+        return [Choice(name=o, value=o) for o in options if current.lower() in o.lower()][:25]
+
+    @char.command(name="profile", description="Details about your character: age, hair, eyes, race, height…")
+    @app_commands.describe(field="What it is, e.g. Age, Hair, Eyes, Race (or anything you like)",
+                           value="The detail, e.g. 24 or 'long, silver'. Leave empty to remove the field")
+    @app_commands.autocomplete(field=profile_field_ac)
+    async def char_profile(self, interaction: discord.Interaction, field: str, value: Optional[str] = None):
+        campaign, c = await require_character(self.db, interaction)
+        lang = campaign.language
+        field = " ".join(field.split())[:32]
+        if not field:
+            raise UserError("The field can't be empty.")
+        profile = [list(p) for p in c.profile]
+        existing = next((p for p in profile if p[0].lower() == field.lower()), None)
+        if value is None or not value.strip():
+            if not existing:
+                raise UserError(t(lang, "**{name}** has no **{field}** in the profile.", name=c.name, field=field))
+            profile.remove(existing)
+            await self.db.update_character(c.id, profile=profile)
+            await interaction.response.send_message(
+                t(lang, "Removed **{field}** from **{name}**'s profile.", field=existing[0], name=c.name),
+                ephemeral=True)
+            return
+        value = " ".join(value.split())[:100]
+        if existing:
+            existing[1] = value
+        else:
+            if len(profile) >= MAX_PROFILE_FIELDS:
+                raise UserError(f"A profile can have at most {MAX_PROFILE_FIELDS} fields.")
+            profile.append([field, value])
+        await self.db.update_character(c.id, profile=profile)
+        await interaction.response.send_message(
+            t(lang, "**{name}**'s profile: **{field}** {value}", name=c.name, field=existing[0] if existing else field,
+              value=value), ephemeral=True)
+
+    @char.command(name="description", description="A short description of your character (opens an editor)")
+    async def char_description(self, interaction: discord.Interaction):
+        campaign, c = await require_character(self.db, interaction)
+        await interaction.response.send_modal(DescriptionModal(self, c, campaign.language))
 
     @char.command(name="color", description="The accent colour of your character's sheet card")
     @app_commands.describe(color="A hex colour like #8e44ad, a name like red/blue/gold, or 'none'")
