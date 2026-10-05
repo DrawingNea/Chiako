@@ -1,9 +1,6 @@
-discord.py
-python-dotenv
-mysql-connector-python-rf
-numpy
-requests
-fuzzywuzzy
-aiohttp
-aiomysql
-matplotlib
+discord.py>=2.4
+aiosqlite>=0.20
+aiomysql>=0.2         # MySQL/MariaDB (when DB_HOST is set)
+python-dotenv>=1.0
+tzdata>=2024.1  # time zones on Windows
+pytest>=8.0
